@@ -1,0 +1,47 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Go (1.17+), AWS SDK for Go (v1), ishell (interactive shell framework), go-shellwords
+  Build: Makefile + GoReleaser, distributed via GitHub releases / Homebrew tap / Nix
+  Domain: Interactive shell for AWS Systems Manager (SSM) Parameter Store
+
+  Architecture:
+  - main (ssmsh.go): startup, mode detection (interactive / -file / stdin / inline args)
+  - config/: reads .ssmshrc INI-style config file (~/.ssmshrc or -config flag)
+  - aws/: AWS session factory (region + profile)
+  - parameterstore/: core state & SSM API wrapper (ParameterStore struct)
+  - commands/: ishell command handlers that call into parameterstore
+
+  ParameterStore state: cwd (current path), decrypt bool, type string, key string,
+  region string, overwrite bool, profile string, clients map[region]SSMAPI
+
+  Cross-region syntax: "region:/path" e.g. "us-east-1:/dev/app/url"
+  Path separator: "/" (Delimiter const), relative paths resolved via fqp()
+  Default parameter type: SecureString
+  Output modes: text (default) or json (configured via .ssmshrc or output field)
+
+  Conventions:
+  - Commands follow UNIX filesystem analogies (ls, cd, cp, mv, rm)
+  - Recursive flag: -r or -R
+  - Batch execution: ssmsh -file commands.txt or echo "..." | ssmsh -file -
+  - Inline execution: ssmsh put name=/foo value=bar type=String
+  - Config priority: env var > .ssmshrc > AWS profile default
+
+  Known limitations / TODO from README:
+  - No find/search command
+  - No globbing or regex support (fqp() has a TODO comment)
+  - No export/import
+  - No cross-account copy (only cross-region)
+  - No in-memory cache (ls can be slow: SSM API returns max 10 results per page)
+  - No env var injection (read params as local env variables)
+  - Output formatting is limited (JSON partial, no table/yaml/csv)
+
+rules:
+  proposal:
+    - Keep proposals under 400 words
+    - Always include a "Non-goals" section
+    - Reference existing commands or structs by name where relevant
+  tasks:
+    - Break tasks into chunks of max 2-3 hours
+    - Always include a task for tests (parameterstore_test.go pattern)
+    - Note which package (commands/ vs parameterstore/) each task lives in

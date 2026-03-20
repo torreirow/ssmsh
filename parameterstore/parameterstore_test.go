@@ -620,6 +620,131 @@ func TestList(t *testing.T) {
 	}
 }
 
+// mockedSSMCapture extends the mock to capture the WithDecryption flag passed to GetParameters
+type mockedSSMCapture struct {
+	ssmiface.SSMAPI
+	GetParameterResp      []ssm.GetParameterOutput
+	capturedWithDecryption *bool
+}
+
+func (m *mockedSSMCapture) GetParameter(in *ssm.GetParameterInput) (*ssm.GetParameterOutput, error) {
+	for _, param := range m.GetParameterResp {
+		if aws.StringValue(param.Parameter.Name) == aws.StringValue(in.Name) {
+			return &param, nil
+		}
+	}
+	return nil, errors.New("Parameter not found")
+}
+
+func (m *mockedSSMCapture) GetParameters(in *ssm.GetParametersInput) (*ssm.GetParametersOutput, error) {
+	m.capturedWithDecryption = in.WithDecryption
+	resp := ssm.GetParametersOutput{}
+	for _, n := range in.Names {
+		parameter, err := m.GetParameter(&ssm.GetParameterInput{Name: n})
+		if err != nil {
+			resp.InvalidParameters = append(resp.InvalidParameters, n)
+		} else {
+			resp.Parameters = append(resp.Parameters, parameter.Parameter)
+		}
+	}
+	return &resp, nil
+}
+
+// TestGetDecryptTrueReturnsPlaintext verifies that Get() returns plaintext when Decrypt=true and the mock provides it
+func TestGetDecryptTrueReturnsPlaintext(t *testing.T) {
+	testParam := parameterstore.ParameterPath{Name: "/House/Stark/AryaStark", Region: "region"}
+	var p parameterstore.ParameterStore
+	p.Region = "region"
+	p.Decrypt = true
+	if err := p.NewParameterStore(false); err != nil {
+		t.Fatal(err)
+	}
+	p.Cwd = parameterstore.Delimiter
+	p.Clients[p.Region] = &mockedSSMCapture{
+		GetParameterResp: []ssm.GetParameterOutput{
+			{Parameter: &ssm.Parameter{
+				Name:  aws.String(testParam.Name),
+				Type:  aws.String("SecureString"),
+				Value: aws.String("Faceless"),
+			}},
+		},
+	}
+	resp, err := p.Get([]string{testParam.Name}, p.Region)
+	if err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+	if len(resp) != 1 {
+		t.Fatalf("Expected 1 result, got %d", len(resp))
+	}
+	if aws.StringValue(resp[0].Value) != "Faceless" {
+		t.Fatalf("Expected plaintext value 'Faceless', got %q", aws.StringValue(resp[0].Value))
+	}
+}
+
+// TestGetDecryptTrueEncryptedPassthrough verifies that Get() passes through <encrypted> when the API returns it
+// (detection and warning is the responsibility of commands/get.go)
+func TestGetDecryptTrueEncryptedPassthrough(t *testing.T) {
+	testParam := parameterstore.ParameterPath{Name: "/House/Stark/AryaStark", Region: "region"}
+	var p parameterstore.ParameterStore
+	p.Region = "region"
+	p.Decrypt = true
+	if err := p.NewParameterStore(false); err != nil {
+		t.Fatal(err)
+	}
+	p.Cwd = parameterstore.Delimiter
+	p.Clients[p.Region] = &mockedSSMCapture{
+		GetParameterResp: []ssm.GetParameterOutput{
+			{Parameter: &ssm.Parameter{
+				Name:  aws.String(testParam.Name),
+				Type:  aws.String("SecureString"),
+				Value: aws.String("<encrypted>"),
+			}},
+		},
+	}
+	resp, err := p.Get([]string{testParam.Name}, p.Region)
+	if err != nil {
+		t.Fatal("Unexpected error:", err)
+	}
+	if len(resp) != 1 {
+		t.Fatalf("Expected 1 result, got %d", len(resp))
+	}
+	if aws.StringValue(resp[0].Value) != "<encrypted>" {
+		t.Fatalf("Expected <encrypted> pass-through, got %q", aws.StringValue(resp[0].Value))
+	}
+}
+
+// TestGetWithDecryptionFlagPassthrough verifies that WithDecryption is correctly passed to the SSM API
+func TestGetWithDecryptionFlagPassthrough(t *testing.T) {
+	testParam := parameterstore.ParameterPath{Name: "/House/Stark/BranStark", Region: "region"}
+	paramOutput := ssm.GetParameterOutput{Parameter: &ssm.Parameter{
+		Name:  aws.String(testParam.Name),
+		Type:  aws.String("SecureString"),
+		Value: aws.String("TheThreeEyedRaven"),
+	}}
+
+	for _, decrypt := range []bool{true, false} {
+		var p parameterstore.ParameterStore
+		p.Region = "region"
+		p.Decrypt = decrypt
+		if err := p.NewParameterStore(false); err != nil {
+			t.Fatal(err)
+		}
+		p.Cwd = parameterstore.Delimiter
+		mock := &mockedSSMCapture{GetParameterResp: []ssm.GetParameterOutput{paramOutput}}
+		p.Clients[p.Region] = mock
+
+		if _, err := p.Get([]string{testParam.Name}, p.Region); err != nil {
+			t.Fatalf("Unexpected error (decrypt=%v): %v", decrypt, err)
+		}
+		if mock.capturedWithDecryption == nil {
+			t.Fatalf("WithDecryption was not captured (decrypt=%v)", decrypt)
+		}
+		if aws.BoolValue(mock.capturedWithDecryption) != decrypt {
+			t.Fatalf("Expected WithDecryption=%v, got %v", decrypt, aws.BoolValue(mock.capturedWithDecryption))
+		}
+	}
+}
+
 func equal(first []string, second []string) bool {
 	if len(first) != len(second) {
 		return false

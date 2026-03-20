@@ -5,12 +5,12 @@
 class Ssmsh < Formula
   desc "A shell for the EC2 Parameter Store"
   homepage "https://github.com/bwhaley/ssmsh"
-  version "1.4.9"
+  version "1.5.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/bwhaley/ssmsh/releases/download/v1.4.9/ssmsh_1.4.9_darwin_arm64.tar.gz"
+      url "https://github.com/bwhaley/ssmsh/releases/download/v1.5.0/ssmsh_1.5.0_darwin_arm64.tar.gz"
       sha256 "a82cbebe3991fddefdea953b3e2162a95583a7b329ab30b87920b766ccd4fd5a"
 
       def install
@@ -18,7 +18,7 @@ class Ssmsh < Formula
       end
     end
     if Hardware::CPU.intel?
-      url "https://github.com/bwhaley/ssmsh/releases/download/v1.4.9/ssmsh_1.4.9_darwin_amd64.tar.gz"
+      url "https://github.com/bwhaley/ssmsh/releases/download/v1.5.0/ssmsh_1.5.0_darwin_amd64.tar.gz"
       sha256 "45d5a592b2aba830f49296f2339d388469a9478873aba805581b84f4a2e98fd7"
 
       def install
@@ -29,7 +29,7 @@ class Ssmsh < Formula
 
   on_linux do
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/bwhaley/ssmsh/releases/download/v1.4.9/ssmsh_1.4.9_linux_arm64.tar.gz"
+      url "https://github.com/bwhaley/ssmsh/releases/download/v1.5.0/ssmsh_1.5.0_linux_arm64.tar.gz"
       sha256 "ebb1590b9be0cf5f5f90bea8fdfb5f462989ba4947586aed38c889aea9e896a0"
 
       def install
@@ -37,7 +37,7 @@ class Ssmsh < Formula
       end
     end
     if Hardware::CPU.intel?
-      url "https://github.com/bwhaley/ssmsh/releases/download/v1.4.9/ssmsh_1.4.9_linux_amd64.tar.gz"
+      url "https://github.com/bwhaley/ssmsh/releases/download/v1.5.0/ssmsh_1.5.0_linux_amd64.tar.gz"
       sha256 "880ce1fd987ce31e68ae582ab83c24f71e9b69319b6176a131bb73e3fe48abdf"
 
       def install

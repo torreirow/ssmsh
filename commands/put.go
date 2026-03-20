@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -157,7 +158,6 @@ func validate(f, v string) (err error) {
 		if err != nil {
 			// A validator failed so we need to reset the parameter input to an empty state
 			putParamInput = ssm.PutParameterInput{}
-			shell.Println(putUsage)
 			return err
 		}
 	}
@@ -194,9 +194,9 @@ func trimSpaces(s string) string {
 
 func validateName(s string) (err error) {
 	if strings.HasPrefix(s, parameterstore.Delimiter) {
-		putParamInput.SetName(s)
+		putParamInput.SetName(path.Clean(s))
 	} else {
-		putParamInput.SetName(ps.Cwd + parameterstore.Delimiter + s)
+		putParamInput.SetName(path.Clean(ps.Cwd + parameterstore.Delimiter + s))
 	}
 	return nil
 }
@@ -221,8 +221,7 @@ func validatePattern(s string) (err error) {
 func validateOverwrite(s string) (err error) {
 	overwrite, err := strconv.ParseBool(s)
 	if err != nil {
-		shell.Println("overwrite must be true or false")
-		return err
+		return errors.New("overwrite must be true or false")
 	}
 	putParamInput.SetOverwrite(overwrite)
 	return nil
@@ -239,8 +238,12 @@ const (
 )
 
 func validateTier(s string) (err error) {
-	if strings.ToLower(s) == StandardTier || strings.ToLower(s) == AdvancedTier {
-		putParamInput.Tier = aws.String(strings.Title(s))
+	if strings.EqualFold(s, StandardTier) {
+		putParamInput.Tier = aws.String(StandardTier)
+		return nil
+	}
+	if strings.EqualFold(s, AdvancedTier) {
+		putParamInput.Tier = aws.String(AdvancedTier)
 		return nil
 	}
 	return errors.New("tier must be standard or advanced")

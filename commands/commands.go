@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 
@@ -104,15 +105,18 @@ func printResult(result interface{}) {
 	case "json":
 		printJSON(result)
 	default:
-		shell.Printf("%+v\n", result)
+		printJSON(result)
 	}
 }
 
 func printJSON(result interface{}) {
-	resultJSON, err := json.MarshalIndent(result, "", "    ")
-	if err != nil {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetIndent("", "    ")
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(result); err != nil {
 		shell.Println("Error with result: ", err)
 	} else {
-		shell.Println(string(resultJSON))
+		shell.Print(buf.String())
 	}
 }
