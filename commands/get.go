@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/abiosoft/ishell"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/bwhaley/ssmsh/parameterstore"
 )
 
@@ -24,6 +25,15 @@ func get(c *ishell.Context) {
 				shell.Println("Error: ", err)
 			} else {
 				if len(resp) >= 1 {
+					for i, param := range resp {
+						if aws.StringValue(param.Type) == "SecureString" {
+							if !ps.Decrypt {
+								resp[i].Value = aws.String("<sensitive>")
+							} else if aws.StringValue(param.Value) == "<encrypted>" {
+								shell.Println("Warning:", aws.StringValue(param.Name), "returned <encrypted>. Verify that your IAM role has kms:Decrypt permission for the parameter's KMS key.")
+							}
+						}
+					}
 					printResult(resp)
 				}
 			}
