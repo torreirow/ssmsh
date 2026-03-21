@@ -1,4 +1,9 @@
 # ssmsh
+
+> **Note:** This is a maintained fork of [bwhaley/ssmsh](https://github.com/bwhaley/ssmsh).
+> The upstream repository has been inactive since February 2024. This fork includes active maintenance,
+> bug fixes, and new features like tab completion ([#31](https://github.com/bwhaley/ssmsh/issues/31)).
+
 ssmsh is an interactive shell for the EC2 Parameter Store. Features:
 * Interact with the parameter store hierarchy using familiar commands like cd, ls, cp, mv, and rm
 * Supports relative paths and shorthand (`..`) syntax
