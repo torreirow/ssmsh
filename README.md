@@ -38,10 +38,30 @@ nix-env -i ssmsh
 
 Set up [AWS credentials](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials).
 
-You can set up a `.ssmshrc` to configure `ssmsh`. By default, `ssmsh` will load `~/.ssmshrc` if it exists. Use the `-config` argument to set a different path.
+### Configuration File Location
+
+`ssmsh` follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) and stores its configuration in `~/.config/ssmsh/config` by default.
+
+**Configuration file priority (highest to lowest):**
+1. `--config` flag: `ssmsh --config /path/to/config`
+2. `SSMSH_CONFIG` environment variable: `export SSMSH_CONFIG=/path/to/config`
+3. XDG config directory: `~/.config/ssmsh/config`
+4. Legacy location: `~/.ssmshrc` (for backwards compatibility)
+
+**Generate a default configuration file:**
+```bash
+ssmsh --generate-config
+```
+
+This creates `~/.config/ssmsh/config` with all available settings and comments.
+
+### Configuration Options
+
+Example configuration file:
 
 ```bash
 [default]
+# Core settings
 type=SecureString
 overwrite=true
 decrypt=true
@@ -49,13 +69,127 @@ profile=my-profile
 region=us-east-1
 key=3example-89a6-4880-b544-73ad3db2ff3b
 output=json
+
+# Tab completion settings
+completion=true              # Enable/disable tab completion (default: true)
+completion-max-items=50      # Maximum completion suggestions (default: 50, max: 500)
+completion-cache-ttl=30      # Cache TTL in seconds (default: 30, range: 0-3600)
+
+# Persistent cache settings
+cache-enabled=true           # Enable persistent cache across sessions (default: true)
+cache-location=~/.cache/ssmsh/cache.gob.gz  # Cache file location
+cache-max-size=50            # Maximum cache size in MB (default: 50, max: 500)
+cache-compression=true       # Compress cache file (default: true)
+
+# Shell history
+history-size=1000            # Command history size (default: 1000)
+history-file=~/.config/ssmsh/history  # History file location
 ```
 
-A few notes on configuration:
-* When setting the region, the `AWS_REGION` env var takes top priority, followed by the setting in `.ssmshrc`, followed by the value set in the AWS profile (if configured)
-* When setting the profile, the `AWS_PROFILE` env var takes top priority, followed by the setting in `.ssmshrc`
+**Configuration notes:**
+* When setting the region, the `AWS_REGION` env var takes top priority, followed by the setting in the config file, followed by the value set in the AWS profile (if configured)
+* When setting the profile, the `AWS_PROFILE` env var takes top priority, followed by the setting in the config file
 * If you set a KMS key, it will only work in the region where that key is located. You can use the `key` command while in the shell to change the key.
 * If the configuration file has `output=json`, the results of the `get` and `history` commands will be printed in JSON. The fields of the JSON results will be the same as in the respective Go structs. See the [`Parameter`](https://docs.aws.amazon.com/sdk-for-go/api/service/ssm/#Parameter) and [`ParameterHistory`](https://docs.aws.amazon.com/sdk-for-go/api/service/ssm/#ParameterHistory) docs.
+
+### Automatic Migration
+
+If you have an existing `~/.ssmshrc` configuration file, `ssmsh` will automatically migrate it to `~/.config/ssmsh/config` on first run. The original file will be backed up to `~/.ssmshrc.backup`.
+
+**Migration behavior:**
+* Happens automatically on startup (unless `--config` or `SSMSH_CONFIG` is set)
+* Creates backup of original file
+* Preserves all settings
+* Displays migration banner with file locations
+* Only runs once (won't re-migrate if new config already exists)
+
+## Tab Completion
+
+`ssmsh` provides intelligent tab completion for AWS Parameter Store paths and parameter names.
+
+### Features
+
+* **Path completion**: Press TAB after typing a partial path to see suggestions
+* **Parameter completion**: Complete parameter names within the current directory
+* **Cross-region completion**: Works with region prefixes like `us-west-2:/path`
+* **Smart caching**: Two-tier cache (in-memory + persistent) for fast responses
+* **Adaptive timeouts**: Automatically adjusts API timeouts based on network performance
+* **Graceful degradation**: Handles AWS throttling, permissions errors, and network issues
+
+### Usage
+
+**Important:** Tab completion uses **async background fetching** to prevent terminal freezing. This means:
+
+1. **First TAB press**: Starts background AWS API fetch (may show no results initially)
+2. **Second TAB press** (after 1-2 seconds): Shows cached results instantly
+
+**Example workflow:**
+
+```bash
+# First TAB - starts background fetch
+/> cd /dev/app<TAB>
+# (no results yet, background fetch in progress)
+
+# Wait 1-2 seconds, then TAB again
+/> cd /dev/app<TAB>
+/dev/application/  /dev/app-config/   # ← Results appear!
+
+# After warmup (~10 seconds on startup), common paths complete on first TAB:
+/> cd /ecs/tech<TAB>
+technative/   # ← Instant! (from cache warmup)
+
+# Parameter completion
+/> get /dev/app/d<TAB>
+database-url  domain  debug-mode
+
+# Cross-region completion
+/> ls us-west-2:/prod/<TAB>
+api/  web/  db/
+```
+
+**Why two TABs?**
+- AWS API calls can take 200ms-2s depending on network/region
+- Blocking the terminal for that long feels like a freeze
+- Async approach keeps terminal responsive
+- After cache warmup, most paths complete on first TAB
+
+### Runtime Commands
+
+Control tab completion behavior at runtime:
+
+```bash
+/> completion true          # Enable tab completion
+/> completion false         # Disable tab completion
+/> completion stats         # Show cache statistics
+/> completion clear-cache   # Clear all caches
+/> completion save-cache    # Force save persistent cache
+/> completion reload-cache  # Reload cache from disk
+```
+
+### Configuration
+
+Tab completion can be configured in `~/.config/ssmsh/config`:
+
+```bash
+[default]
+completion=true              # Enable/disable (default: true)
+completion-max-items=50      # Max suggestions shown (default: 50)
+completion-cache-ttl=30      # Cache TTL in seconds (default: 30)
+cache-enabled=true           # Persistent cache (default: true)
+cache-location=~/.cache/ssmsh/cache.gob.gz
+cache-max-size=50            # Max cache size in MB (default: 50)
+cache-compression=true       # Compress cache file (default: true)
+```
+
+### Performance
+
+* **Memory cache**: < 1 microsecond per lookup
+* **Persistent cache**: < 1 millisecond to load
+* **AWS API**: First request may take 200ms-2s, then cached for 30 seconds
+* **Background fetch timeout**: 2 seconds (prevents terminal hanging)
+* **Cache warmup**: Happens on startup, pre-fetches common paths (/, /dev, /prod, etc.)
+* **Cache invalidation**: Automatic on put, rm, cp, mv operations
+* **Two-TAB pattern**: First TAB starts fetch, second TAB shows results (instant after cache hit)
 
 ## Usage
 ### Help
@@ -65,6 +199,8 @@ A few notes on configuration:
 Commands:
 cd           change your relative location within the parameter store
 clear        clear the screen
+completion   control tab completion settings
+config       manage ssmsh configuration
 cp           copy source to dest
 decrypt      toggle parameter decryption
 exit         exit the program
@@ -128,13 +264,39 @@ db/
 /dev/db>
 ```
 
-### Toggle decryption for SecureString parameters
+### Decryption for SecureString parameters
+
+**Global toggle** (affects all get commands):
 ```bash
 /> decrypt
 Decrypt is false
 /> decrypt true
 Decrypt is true
 />
+```
+
+**Per-command decryption** (with `-d` or `--decrypt` flag):
+```bash
+# Decrypt just for this one get (doesn't change global setting)
+/> get -d /dev/db/password
+[{
+  Name: "/dev/db/password",
+  Type: "SecureString",
+  Value: "secret123",    # ← Decrypted!
+  Version: 1
+}]
+
+# Without -d flag, uses global decrypt setting
+/> get /dev/db/password
+[{
+  Name: "/dev/db/password",
+  Type: "SecureString",
+  Value: "<sensitive>",  # ← Hidden (decrypt=false globally)
+  Version: 1
+}]
+
+# Decrypt multiple parameters at once
+/> get -d /dev/db/password /dev/api/key
 ```
 
 ### Get parameter history
@@ -265,13 +427,11 @@ $ ssmsh put name=/dev/app/domain value="www.example.com" type=String description
 
 ## todo (maybe)
 * [ ] Flexible and improved output formats
-* [ ] Release via homebrew
 * [ ] Copy between accounts using profiles
 * [ ] Find parameter
 * [ ] Integration w/ CloudWatch Events for scheduled parameter updates
 * [ ] Export/import
 * [ ] Support globbing and/or regex
-* [ ] In memory parameter cache
 * [ ] Read parameters as local env variables
 
 

@@ -10,8 +10,14 @@ Move parameter from src to dst.
 `
 
 func mv(c *ishell.Context) {
-	err := ps.Move(parsePath(c.Args[0]), parsePath(c.Args[1]))
+	src := parsePath(c.Args[0])
+	dst := parsePath(c.Args[1])
+	err := ps.Move(src, dst)
 	if err != nil {
 		shell.Println(err)
+	} else {
+		// Invalidate cache for both source and destination paths
+		invalidatePathAndParents(src.Name, src.Region)
+		invalidatePathAndParents(dst.Name, dst.Region)
 	}
 }

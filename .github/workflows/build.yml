@@ -31,6 +31,20 @@ jobs:
       - name: Vet
         run: go vet -v $(go list ./...)
       - name: Test
-        run: go test -v $(go list ./...)
+        run: go test -v -race -coverprofile=coverage.out $(go list ./...)
+      - name: Integration Tests
+        run: go test -v -tags=integration ./...
+      - name: Benchmark
+        run: go test -bench=. -benchmem -run=^$ ./commands
+      - name: Coverage Check
+        run: |
+          go tool cover -func=coverage.out | tee coverage.txt
+          TOTAL_COV=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${TOTAL_COV}%"
+          # Require > 80% overall coverage
+          if (( $(echo "$TOTAL_COV < 80" | bc -l) )); then
+            echo "Coverage ${TOTAL_COV}% is below 80% threshold"
+            exit 1
+          fi
       - name: Build
         run: make build

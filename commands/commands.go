@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"strings"
+	"sync"
 
 	"github.com/abiosoft/ishell"
 	"github.com/bwhaley/ssmsh/config"
@@ -16,6 +17,12 @@ var (
 	shell *ishell.Shell
 	ps    *parameterstore.ParameterStore
 	cfg   *config.Config
+
+	// Completion runtime state
+	completionMutex    sync.RWMutex
+	completionEnabled  bool
+	completionMaxItems int
+	completionCacheTTL int
 )
 
 // Init initializes the ssmsh subcommands
@@ -23,30 +30,118 @@ func Init(iShell *ishell.Shell, iPs *parameterstore.ParameterStore, iCfg *config
 	shell = iShell
 	ps = iPs
 	cfg = iCfg
-	registerCommand("cd", "change your relative location within the parameter store", cd, cdUsage)
-	registerCommand("cp", "copy source to dest", cp, cpUsage)
-	registerCommand("decrypt", "toggle parameter decryption", decrypt, decryptUsage)
-	registerCommand("get", "get parameters", get, getUsage)
-	registerCommand("history", "get parameter history", history, historyUsage)
-	registerCommand("key", "set the KMS key", key, keyUsage)
-	registerCommand("ls", "list parameters", ls, lsUsage)
-	registerCommand("mv", "move parameters", mv, mvUsage)
-	registerCommand("policy", "create named parameter policy", policy, policyUsage)
-	registerCommand("profile", "switch to a different AWS IAM profile", profile, profileUsage)
-	registerCommand("put", "set parameter", put, putUsage)
-	registerCommand("region", "change region", region, regionUsage)
-	registerCommand("rm", "remove parameters", rm, rmUsage)
+
+	// Initialize completion settings
+	initCompletionSettings(iCfg)
+
+	// Initialize persistent cache
+	var err error
+	persistentCache, err = NewPersistentCache(iCfg)
+	if err != nil {
+		shell.Printf("Warning: Could not initialize persistent cache: %v\n", err)
+	}
+
+	// Register commands with completers
+	registerCommand("cd", "change your relative location within the parameter store", cd, cdUsage, pathCompleter)
+	registerCommand("completion", "toggle tab completion on/off", completionCmd, completionUsage, nil)
+	registerCommand("config", "manage configuration", configCmd, configUsage, nil)
+	registerCommand("cp", "copy source to dest", cp, cpUsage, parameterCompleter)
+	registerCommand("decrypt", "toggle parameter decryption", decrypt, decryptUsage, nil)
+	registerCommand("get", "get parameters", get, getUsage, parameterCompleter)
+	registerCommand("history", "get parameter history", history, historyUsage, nil)
+	registerCommand("key", "set the KMS key", key, keyUsage, nil)
+	registerCommand("ls", "list parameters", ls, lsUsage, parameterCompleter)
+	registerCommand("mv", "move parameters", mv, mvUsage, parameterCompleter)
+	registerCommand("policy", "create named parameter policy", policy, policyUsage, nil)
+	registerCommand("profile", "switch to a different AWS IAM profile", profile, profileUsage, nil)
+	registerCommand("put", "set parameter", put, putUsage, nil)
+	registerCommand("region", "change region", region, regionUsage, nil)
+	registerCommand("rm", "remove parameters", rm, rmUsage, parameterCompleter)
 	setPrompt(parameterstore.Delimiter)
 }
 
+// initCompletionSettings initializes completion state from config
+func initCompletionSettings(cfg *config.Config) {
+	completionMutex.Lock()
+	completionEnabled = cfg.Default.Completion
+	if cfg.Default.CompletionMaxItems == 0 {
+		completionMaxItems = 50
+	} else {
+		completionMaxItems = cfg.Default.CompletionMaxItems
+	}
+
+	if cfg.Default.CompletionCacheTTL == 0 {
+		completionCacheTTL = 30
+	} else {
+		completionCacheTTL = cfg.Default.CompletionCacheTTL
+	}
+	enabled := completionEnabled
+	completionMutex.Unlock()
+
+	// Warm up cache on startup if completion is enabled
+	// (done after unlocking to avoid holding lock during network calls)
+	if enabled {
+		warmupCache()
+	}
+}
+
+// isCompletionEnabled checks if completion is currently enabled
+func isCompletionEnabled() bool {
+	completionMutex.RLock()
+	defer completionMutex.RUnlock()
+	return completionEnabled
+}
+
+// setCompletionEnabled sets the runtime completion state
+func setCompletionEnabled(enabled bool) {
+	completionMutex.Lock()
+	defer completionMutex.Unlock()
+	completionEnabled = enabled
+
+	// Warm up cache when enabling completion
+	if enabled {
+		warmupCache()
+	}
+}
+
+// getCompletionMaxItems returns the max items setting
+func getCompletionMaxItems() int {
+	completionMutex.RLock()
+	defer completionMutex.RUnlock()
+	return completionMaxItems
+}
+
+// getCompletionCacheTTL returns the cache TTL setting
+func getCompletionCacheTTL() int {
+	completionMutex.RLock()
+	defer completionMutex.RUnlock()
+	return completionCacheTTL
+}
+
+// Cleanup saves persistent cache before shutdown
+func Cleanup() {
+	if persistentCache != nil {
+		if err := persistentCache.Close(); err != nil {
+			shell.Printf("Warning: Could not save cache: %v\n", err)
+		}
+	}
+}
+
 // registerCommand adds a command to the shell
-func registerCommand(name string, helpText string, f fn, usageText string) {
-	shell.AddCmd(&ishell.Cmd{
+func registerCommand(name string, helpText string, f fn, usageText string, completer func([]string) []string) {
+	cmd := &ishell.Cmd{
 		Name:     name,
 		Help:     helpText,
 		LongHelp: usageText,
 		Func:     f,
-	})
+	}
+
+	// Wrap the completer if provided
+	if completer != nil {
+		cmd.Completer = wrapCompleter(completer)
+	}
+
+	shell.AddCmd(cmd)
 }
 
 // setPrompt configures the shell prompt

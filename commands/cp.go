@@ -17,8 +17,12 @@ func cp(c *ishell.Context) {
 		shell.Println(cpUsage)
 		return
 	}
-	err := ps.Copy(parsePath(paths[0]), parsePath(paths[1]), recurse)
+	dst := parsePath(paths[1])
+	err := ps.Copy(parsePath(paths[0]), dst, recurse)
 	if err != nil {
 		shell.Println(err)
+	} else {
+		// Invalidate cache for destination path
+		invalidatePathAndParents(dst.Name, dst.Region)
 	}
 }

@@ -25,6 +25,43 @@ archives:
 
 changelog:
   sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+  groups:
+    - title: 'Breaking Changes'
+      regexp: "^.*BREAKING.*$"
+      order: 0
+    - title: 'Features'
+      regexp: "^.*feat.*$"
+      order: 1
+    - title: 'Bug Fixes'
+      regexp: "^.*fix.*$"
+      order: 2
+    - title: 'Other Changes'
+      order: 999
+
+release:
+  header: |
+    ## New Features
+
+    ### Tab Completion
+    Intelligent tab completion for AWS Parameter Store paths and parameters with async background fetching to prevent terminal freezing.
+
+    ### XDG Configuration Support
+    Configuration files now follow XDG Base Directory specification (`~/.config/ssmsh/config`).
+
+    **No action required** - migration happens automatically on first run. Your original `~/.ssmshrc` will be backed up to `~/.ssmshrc.backup`.
+
+    ### Get Decrypt Flag
+    New `-d` / `--decrypt` flag for inline SecureString parameter decryption without changing global settings.
+
+    See the [CHANGELOG](https://github.com/bwhaley/ssmsh/blob/main/CHANGELOG.md) for full details.
+  footer: |
+    **Full Changelog**: https://github.com/bwhaley/ssmsh/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 brews:
   - tap:

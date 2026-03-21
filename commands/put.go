@@ -78,6 +78,8 @@ func put(c *ishell.Context) {
 		if version != "" {
 			shell.Println("Put " + aws.StringValue(putParamInput.Name) + " version " + version)
 		}
+		// Invalidate cache for this path and its parents
+		invalidatePathAndParents(aws.StringValue(putParamInput.Name), putParamRegion)
 	}
 }
 

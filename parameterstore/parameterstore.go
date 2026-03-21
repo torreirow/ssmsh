@@ -73,7 +73,18 @@ func (ps *ParameterStore) NewParameterStore(checkCredentials bool) error {
 	ps.Cwd = Delimiter
 
 	ps.Clients = make(map[string]ssmiface.SSMAPI)
-	ps.Clients[ps.Region] = ssm.New(saws.NewSession(ps.Region, ps.Profile))
+
+	// Create session - if region is empty, AWS SDK will determine it from profile
+	sess := saws.NewSession(ps.Region, ps.Profile)
+	client := ssm.New(sess)
+
+	// Update ps.Region with the actual region from the session
+	// This is important for tab completion to work when using AWS profiles
+	if ps.Region == "" && sess.Config.Region != nil {
+		ps.Region = *sess.Config.Region
+	}
+
+	ps.Clients[ps.Region] = client
 
 	if checkCredentials {
 		// Check for a non-existent parameter to validate credentials & permissions

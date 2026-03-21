@@ -26,6 +26,11 @@ func rm(c *ishell.Context) {
 		err = ps.Remove(parameterPaths, recurse)
 		if err != nil {
 			shell.Println("Error: ", err)
+		} else {
+			// Invalidate cache for deleted paths
+			for _, param := range parameterPaths {
+				invalidatePathAndParents(param.Name, param.Region)
+			}
 		}
 	} else {
 		shell.Println(rmUsage, err)
