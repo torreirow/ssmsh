@@ -94,7 +94,7 @@ func main() {
 		err := shell.Process(flag.Args()...)
 		if err != nil {
 			shell.Println("Error executing shell process:", err)
-			shell.Println("This might be a bug. Please open an issue at github.com/bwhaley/ssmsh.\n")
+			shell.Println("This might be a bug. Please open an issue at github.com/torreirow/ssmsh.\n")
 			os.Exit(1)
 		}
 	} else {

@@ -330,7 +330,7 @@ func GenerateDefaultConfig() error {
 # Location: ~/.config/ssmsh/config
 #
 # This file uses INI-like syntax. For more information:
-# https://github.com/bwhaley/ssmsh
+# https://github.com/torreirow/ssmsh
 
 [default]
 # AWS Configuration

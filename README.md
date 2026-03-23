@@ -22,15 +22,6 @@ ssmsh is an interactive shell for the EC2 Parameter Store. Features:
 
 Download binaries for MacOS, Linux, or Windows from the latest release [here](https://github.com/torreirow/ssmsh/releases).
 
-### Homebrew
-
-There is a Homebrew tap published to this repo, for installation on both MacOS and Linux. Add the tap and install with:
-
-```bash
-brew tap torreirow/ssmsh https://github.com/torreirow/ssmsh
-brew install ssmsh
-```
-
 ### Nix
 
 **Using Flakes (Recommended):**
@@ -528,8 +519,8 @@ go version go1.17.6 darwin/arm64
 export GOPATH=$HOME/go
 export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 ```
-3. Run `go get github.com/bwhaley/ssmsh`
-4. Run `cd $GOPATH/src/github.com/bwhaley/ssmsh && make` to build and install the binary to `$GOPATH/bin/ssmsh`
+3. Clone this repository: `git clone https://github.com/torreirow/ssmsh.git`
+4. Run `cd ssmsh && make` to build and install the binary to `$GOPATH/bin/ssmsh`
 
 
 ## Related tools

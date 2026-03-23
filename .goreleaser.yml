@@ -59,14 +59,6 @@ release:
     ### Get Decrypt Flag
     New `-d` / `--decrypt` flag for inline SecureString parameter decryption without changing global settings.
 
-    See the [CHANGELOG](https://github.com/bwhaley/ssmsh/blob/main/CHANGELOG.md) for full details.
+    See the [CHANGELOG](https://github.com/torreirow/ssmsh/blob/main/CHANGELOG.md) for full details.
   footer: |
-    **Full Changelog**: https://github.com/bwhaley/ssmsh/compare/{{ .PreviousTag }}...{{ .Tag }}
-
-brews:
-  - tap:
-      owner: bwhaley
-      name: ssmsh
-    description: A shell for the EC2 Parameter Store
-    homepage: https://github.com/bwhaley/ssmsh
-    license: MIT
+    **Full Changelog**: https://github.com/torreirow/ssmsh/compare/{{ .PreviousTag }}...{{ .Tag }}
