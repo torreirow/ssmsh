@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"github.com/abiosoft/ishell"
-	"github.com/bwhaley/ssmsh/parameterstore"
+	"github.com/torreirow/parsh/parameterstore"
 )
 
 const lsUsage string = `

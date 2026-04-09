@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bwhaley/ssmsh/config"
+	"github.com/torreirow/parsh/config"
 )
 
 // cacheEntry holds cached parameter list with metadata

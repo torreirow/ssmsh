@@ -20,12 +20,12 @@ func TestGetConfigPaths(t *testing.T) {
 		{
 			name:           "default location",
 			xdgConfigHome:  "",
-			expectedSuffix: ".config/ssmsh",
+			expectedSuffix: ".config/parsh",
 		},
 		{
 			name:           "custom XDG_CONFIG_HOME",
 			xdgConfigHome:  "/custom/config",
-			expectedSuffix: "custom/config/ssmsh",
+			expectedSuffix: "custom/config/parsh",
 		},
 	}
 

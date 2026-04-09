@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/abiosoft/ishell"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/bwhaley/ssmsh/parameterstore"
+	"github.com/torreirow/parsh/parameterstore"
 )
 
 const getUsage string = `

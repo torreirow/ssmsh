@@ -6,7 +6,7 @@ import (
 	"github.com/abiosoft/ishell"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kms"
-	saws "github.com/bwhaley/ssmsh/aws"
+	saws "github.com/torreirow/parsh/aws"
 )
 
 const keyUsage string = `

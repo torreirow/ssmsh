@@ -10,8 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/aws/aws-sdk-go/service/ssm/ssmiface"
-	saws "github.com/bwhaley/ssmsh/aws"
-	"github.com/bwhaley/ssmsh/config"
+	saws "github.com/torreirow/parsh/aws"
+	"github.com/torreirow/parsh/config"
 )
 
 // Delimiter is the parameter path separator character
@@ -40,7 +40,7 @@ func (ps *ParameterStore) SetDefaults(cfg config.Config) {
 	// The value in the $AWS_PROFILE env var is most preferred
 	ps.Profile = os.Getenv("AWS_PROFILE")
 
-	// Profile setting via ssmsh config file is second
+	// Profile setting via parsh config file is second
 	if ps.Profile == "" {
 		ps.Profile = cfg.Default.Profile
 	}

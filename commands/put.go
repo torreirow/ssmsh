@@ -12,7 +12,7 @@ import (
 	"github.com/abiosoft/ishell"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
-	"github.com/bwhaley/ssmsh/parameterstore"
+	"github.com/torreirow/parsh/parameterstore"
 )
 
 // TODO Inline syntax

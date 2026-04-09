@@ -11,13 +11,13 @@ import (
 )
 
 const (
-	LegacyConfigFileName = ".ssmshrc"
-	ConfigDirName        = "ssmsh"
+	LegacyConfigFileName = ".parshrc"
+	ConfigDirName        = "parsh"
 	ConfigFileName       = "config"
 	HistoryFileName      = "history"
 )
 
-// Paths contains all ssmsh config paths
+// Paths contains all parsh config paths
 type Paths struct {
 	ConfigDir   string
 	ConfigFile  string
@@ -26,7 +26,7 @@ type Paths struct {
 	LogFile     string
 }
 
-// GetConfigPaths returns the paths for ssmsh configuration files
+// GetConfigPaths returns the paths for parsh configuration files
 func GetConfigPaths() (*Paths, error) {
 	configDir, err := getConfigDir()
 	if err != nil {
@@ -49,7 +49,7 @@ func getConfigDir() (string, error) {
 		return filepath.Join(xdgConfig, ConfigDirName), nil
 	}
 
-	// Fall back to ~/.config/ssmsh
+	// Fall back to ~/.config/parsh
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
@@ -145,7 +145,7 @@ func AutoMigrateConfig() error {
 
 	// AUTO-MIGRATE
 	fmt.Println("═══════════════════════════════════════════════")
-	fmt.Println("  ssmsh Configuration Migration")
+	fmt.Println("  parsh Configuration Migration")
 	fmt.Println("═══════════════════════════════════════════════")
 	fmt.Printf("\nMigrating configuration to new location...\n\n")
 
@@ -188,15 +188,15 @@ func AutoMigrateConfig() error {
 	return nil
 }
 
-// ReadConfig reads ssmsh configuration with priority chain
+// ReadConfig reads parsh configuration with priority chain
 func ReadConfig(cfgFile string) (Config, error) {
 	// If explicit config file provided via flag
 	if cfgFile != "" {
 		return readConfigFromFile(cfgFile)
 	}
 
-	// Check $SSMSH_CONFIG environment variable
-	if envConfig := os.Getenv("SSMSH_CONFIG"); envConfig != "" {
+	// Check $PARSH_CONFIG environment variable
+	if envConfig := os.Getenv("PARSH_CONFIG"); envConfig != "" {
 		return readConfigFromFile(envConfig)
 	}
 
@@ -210,7 +210,7 @@ func ReadConfig(cfgFile string) (Config, error) {
 		return readConfigFromFile(paths.ConfigFile)
 	}
 
-	// Try legacy ~/.ssmshrc (backwards compatibility)
+	// Try legacy ~/.parshrc (backwards compatibility)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return Config{}, err
@@ -326,11 +326,11 @@ func GenerateDefaultConfig() error {
 	}
 
 	// Generate config with helpful comments
-	configContent := `# ssmsh configuration file
-# Location: ~/.config/ssmsh/config
+	configContent := `# parsh configuration file
+# Location: ~/.config/parsh/config
 #
 # This file uses INI-like syntax. For more information:
-# https://github.com/torreirow/ssmsh
+# https://github.com/torreirow/parsh
 
 [default]
 # AWS Configuration
@@ -353,7 +353,7 @@ completion-cache-ttl=30
 cache-enabled=true
 cache-max-size=50
 cache-compression=true
-# cache-location=~/.config/ssmsh/cache.db
+# cache-location=~/.config/parsh/cache.db
 
 # Command History
 history-size=1000

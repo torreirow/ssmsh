@@ -2,7 +2,7 @@ package commands
 
 import (
 	"github.com/abiosoft/ishell"
-	"github.com/bwhaley/ssmsh/parameterstore"
+	"github.com/torreirow/parsh/parameterstore"
 )
 
 const rmUsage string = `

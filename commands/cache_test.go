@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bwhaley/ssmsh/config"
+	"github.com/torreirow/parsh/config"
 )
 
 func TestCacheTTL(t *testing.T) {

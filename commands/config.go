@@ -5,7 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/abiosoft/ishell"
-	"github.com/bwhaley/ssmsh/config"
+	"github.com/torreirow/parsh/config"
 )
 
 const configUsage string = `

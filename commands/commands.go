@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/abiosoft/ishell"
-	"github.com/bwhaley/ssmsh/config"
-	"github.com/bwhaley/ssmsh/parameterstore"
+	"github.com/torreirow/parsh/config"
+	"github.com/torreirow/parsh/parameterstore"
 )
 
 type fn func(*ishell.Context)

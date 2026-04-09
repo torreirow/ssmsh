@@ -14,14 +14,14 @@ import (
 func TestFullMigrationWorkflow(t *testing.T) {
 	t.Skip("Requires AWS credentials for full integration test - manual test recommended")
 	// Setup: Create temp home directory
-	tmpHome, err := ioutil.TempDir("", "ssmsh-migration-test-*")
+	tmpHome, err := ioutil.TempDir("", "parsh-migration-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
 	defer os.RemoveAll(tmpHome)
 
 	// Create legacy config file
-	legacyConfig := filepath.Join(tmpHome, ".ssmshrc")
+	legacyConfig := filepath.Join(tmpHome, ".parshrc")
 	legacyContent := `[default]
 region = us-east-1
 decrypt = true
@@ -36,8 +36,8 @@ decrypt = true
 		t.Fatalf("Legacy config was not created")
 	}
 
-	// Build ssmsh binary
-	tmpBinary := filepath.Join(tmpHome, "ssmsh-test")
+	// Build parsh binary
+	tmpBinary := filepath.Join(tmpHome, "parsh-test")
 	buildCmd := exec.Command("go", "build", "-o", tmpBinary, ".")
 	buildCmd.Env = append(os.Environ(), "HOME="+tmpHome)
 	output, err := buildCmd.CombinedOutput()
@@ -45,7 +45,7 @@ decrypt = true
 		t.Fatalf("Failed to build binary: %v\nOutput: %s", err, output)
 	}
 
-	// Run ssmsh with --version (triggers migration without entering interactive mode)
+	// Run parsh with --version (triggers migration without entering interactive mode)
 	runCmd := exec.Command(tmpBinary, "--version")
 	runCmd.Env = append(os.Environ(), "HOME="+tmpHome)
 	output, err = runCmd.CombinedOutput()
@@ -56,7 +56,7 @@ decrypt = true
 
 	// Verify migration happened:
 	// 1. New config directory exists
-	newConfigDir := filepath.Join(tmpHome, ".config", "ssmsh")
+	newConfigDir := filepath.Join(tmpHome, ".config", "parsh")
 	if _, err := os.Stat(newConfigDir); os.IsNotExist(err) {
 		t.Errorf("New config directory was not created at %s", newConfigDir)
 	}
@@ -88,10 +88,10 @@ func TestPersistentCacheAcrossSessions(t *testing.T) {
 	t.Skip("Requires AWS credentials and interactive shell - manual test recommended")
 
 	// This test would require:
-	// 1. Start ssmsh in non-interactive mode
+	// 1. Start parsh in non-interactive mode
 	// 2. Trigger some completions to populate cache
 	// 3. Exit cleanly
-	// 4. Restart ssmsh
+	// 4. Restart parsh
 	// 5. Verify cache was loaded from disk
 	// 6. Verify completions are faster (cache hit)
 
@@ -118,14 +118,14 @@ func TestCompletionWithThrottling(t *testing.T) {
 // TestConfigPriorityChain tests config file resolution order
 func TestConfigPriorityChain(t *testing.T) {
 	// Setup: Create temp home directory
-	tmpHome, err := ioutil.TempDir("", "ssmsh-priority-test-*")
+	tmpHome, err := ioutil.TempDir("", "parsh-priority-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
 	defer os.RemoveAll(tmpHome)
 
 	// Create XDG config directory
-	xdgConfigDir := filepath.Join(tmpHome, ".config", "ssmsh")
+	xdgConfigDir := filepath.Join(tmpHome, ".config", "parsh")
 	err = os.MkdirAll(xdgConfigDir, 0700)
 	if err != nil {
 		t.Fatalf("Failed to create XDG config dir: %v", err)
@@ -142,7 +142,7 @@ region = us-west-2
 	}
 
 	// Create legacy config file
-	legacyConfig := filepath.Join(tmpHome, ".ssmshrc")
+	legacyConfig := filepath.Join(tmpHome, ".parshrc")
 	legacyContent := `[default]
 region = us-east-1
 `
@@ -162,7 +162,7 @@ region = eu-west-1
 	}
 
 	// Build test binary
-	tmpBinary := filepath.Join(tmpHome, "ssmsh-test")
+	tmpBinary := filepath.Join(tmpHome, "parsh-test")
 	buildCmd := exec.Command("go", "build", "-o", tmpBinary, ".")
 	output, err := buildCmd.CombinedOutput()
 	if err != nil {
@@ -181,12 +181,12 @@ region = eu-west-1
 		// For now, just verify it doesn't crash
 	})
 
-	// Test 2: SSMSH_CONFIG env var takes priority over XDG
+	// Test 2: PARSH_CONFIG env var takes priority over XDG
 	t.Run("EnvVarOverXDG", func(t *testing.T) {
 		cmd := exec.Command(tmpBinary, "--version")
 		cmd.Env = append(os.Environ(),
 			"HOME="+tmpHome,
-			"SSMSH_CONFIG="+explicitConfig,
+			"PARSH_CONFIG="+explicitConfig,
 		)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -211,13 +211,13 @@ region = eu-west-1
 
 // TestConfigDirPermissions verifies config directory is created with secure permissions
 func TestConfigDirPermissions(t *testing.T) {
-	tmpHome, err := ioutil.TempDir("", "ssmsh-perms-test-*")
+	tmpHome, err := ioutil.TempDir("", "parsh-perms-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
 	defer os.RemoveAll(tmpHome)
 
-	configDir := filepath.Join(tmpHome, ".config", "ssmsh")
+	configDir := filepath.Join(tmpHome, ".config", "parsh")
 	err = os.MkdirAll(configDir, 0700)
 	if err != nil {
 		t.Fatalf("Failed to create config dir: %v", err)
@@ -237,7 +237,7 @@ func TestConfigDirPermissions(t *testing.T) {
 
 // TestCacheFileHandling tests cache file operations
 func TestCacheFileHandling(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "ssmsh-cache-test-*")
+	tmpDir, err := ioutil.TempDir("", "parsh-cache-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -258,14 +258,14 @@ func TestCacheFileHandling(t *testing.T) {
 
 // TestHistoryFileCreation verifies history file is created in XDG location
 func TestHistoryFileCreation(t *testing.T) {
-	tmpHome, err := ioutil.TempDir("", "ssmsh-history-test-*")
+	tmpHome, err := ioutil.TempDir("", "parsh-history-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
 	defer os.RemoveAll(tmpHome)
 
 	// Create config directory
-	configDir := filepath.Join(tmpHome, ".config", "ssmsh")
+	configDir := filepath.Join(tmpHome, ".config", "parsh")
 	err = os.MkdirAll(configDir, 0700)
 	if err != nil {
 		t.Fatalf("Failed to create config dir: %v", err)
@@ -298,14 +298,14 @@ func TestHistoryFileCreation(t *testing.T) {
 
 // TestGenerateConfigFlag tests the --generate-config flag
 func TestGenerateConfigFlag(t *testing.T) {
-	tmpHome, err := ioutil.TempDir("", "ssmsh-genconfig-test-*")
+	tmpHome, err := ioutil.TempDir("", "parsh-genconfig-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
 	defer os.RemoveAll(tmpHome)
 
 	// Build test binary
-	tmpBinary := filepath.Join(tmpHome, "ssmsh-test")
+	tmpBinary := filepath.Join(tmpHome, "parsh-test")
 	buildCmd := exec.Command("go", "build", "-o", tmpBinary, ".")
 	output, err := buildCmd.CombinedOutput()
 	if err != nil {
@@ -336,7 +336,7 @@ func TestGenerateConfigFlag(t *testing.T) {
 	}
 
 	// Verify config was created
-	configFile := filepath.Join(tmpHome, ".config", "ssmsh", "config")
+	configFile := filepath.Join(tmpHome, ".config", "parsh", "config")
 	if _, err := os.Stat(configFile); err == nil {
 		// Config was created, verify it has some content
 		content, err := ioutil.ReadFile(configFile)

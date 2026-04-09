@@ -7,18 +7,18 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/bwhaley/ssmsh/parameterstore"
+	"github.com/torreirow/parsh/parameterstore"
 )
 
 // pathCompleter provides completion for directory paths
 func pathCompleter(args []string) []string {
 	// Debug: log that completer was called
-	if os.Getenv("SSMSH_DEBUG") != "" {
+	if os.Getenv("PARSH_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[DEBUG] pathCompleter called with args: %v, enabled: %v, cwd: %s\n", args, isCompletionEnabled(), ps.Cwd)
 	}
 
 	if !isCompletionEnabled() {
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] completion is disabled\n")
 		}
 		return []string{}
@@ -53,7 +53,7 @@ func pathCompleter(args []string) []string {
 		}
 	}
 
-	if os.Getenv("SSMSH_DEBUG") != "" {
+	if os.Getenv("PARSH_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[DEBUG] pathCompleter returning %d total results\n", len(allResults))
 	}
 
@@ -84,13 +84,13 @@ func getPathSuggestions(searchPath string, dirsOnly bool) []string {
 	// Check cache first
 	cacheKey := searchPath + ":" + region
 	if cached := getCached(cacheKey); cached != nil {
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] Cache hit for %s: %d items\n", searchPath, len(cached))
 		}
 		return filterAndLimit(cached, "", dirsOnly)
 	}
 
-	if os.Getenv("SSMSH_DEBUG") != "" {
+	if os.Getenv("PARSH_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[DEBUG] Cache miss for %s, fetching in background...\n", searchPath)
 	}
 
@@ -102,7 +102,7 @@ func getPathSuggestions(searchPath string, dirsOnly bool) []string {
 		results := fetchParameterList(searchPath, region)
 		if results != nil && len(results) > 0 {
 			setCached(cacheKey, results)
-			if os.Getenv("SSMSH_DEBUG") != "" {
+			if os.Getenv("PARSH_DEBUG") != "" {
 				fmt.Fprintf(os.Stderr, "[DEBUG] Background fetch completed for %s: %d items\n", searchPath, len(results))
 			}
 		}
@@ -115,13 +115,13 @@ func getPathSuggestions(searchPath string, dirsOnly bool) []string {
 
 // fetchParameterList queries AWS Parameter Store
 func fetchParameterList(path string, region string) []string {
-	if os.Getenv("SSMSH_DEBUG") != "" {
+	if os.Getenv("PARSH_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList START: path=%s, region=%s\n", path, region)
 	}
 
 	// Check if we're in throttle backoff
 	if tracker.isThrottled() {
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList: throttled, returning empty\n")
 		}
 		return []string{} // Silent fail - no suggestions
@@ -129,7 +129,7 @@ func fetchParameterList(path string, region string) []string {
 
 	// Rate limit check
 	if !tracker.allowRequest() {
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList: rate limited, returning empty\n")
 		}
 		return []string{} // Too many requests - skip
@@ -154,7 +154,7 @@ func fetchParameterList(path string, region string) []string {
 	// We allow up to 2 seconds for the fetch to complete
 	timeout := 2 * time.Second
 
-	if os.Getenv("SSMSH_DEBUG") != "" {
+	if os.Getenv("PARSH_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList using timeout: %v\n", timeout)
 	}
 
@@ -163,7 +163,7 @@ func fetchParameterList(path string, region string) []string {
 		latency := time.Since(start)
 		perfTracker.recordLatency(latency)
 
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList RESULT: path=%s, error=%v, items=%d\n",
 				path, result.Error, len(result.Result))
 		}
@@ -171,7 +171,7 @@ func fetchParameterList(path string, region string) []string {
 		if result.Error != nil {
 			// Check if it's a throttling error
 			if aerr, ok := result.Error.(awserr.Error); ok {
-				if os.Getenv("SSMSH_DEBUG") != "" {
+				if os.Getenv("PARSH_DEBUG") != "" {
 					fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList AWS ERROR: %s - %s\n",
 						aerr.Code(), aerr.Message())
 				}
@@ -189,21 +189,21 @@ func fetchParameterList(path string, region string) []string {
 					return []string{}
 				}
 			}
-			if os.Getenv("SSMSH_DEBUG") != "" {
+			if os.Getenv("PARSH_DEBUG") != "" {
 				fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList UNHANDLED ERROR: %v\n", result.Error)
 			}
 			return []string{}
 		}
 
 		tracker.recordRequest()
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList SUCCESS: path=%s, returning %d items\n",
 				path, len(result.Result))
 		}
 		return result.Result
 
 	case <-time.After(timeout):
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] fetchParameterList TIMEOUT: path=%s after %v\n", path, timeout)
 		}
 		quit <- true
@@ -271,13 +271,13 @@ func wrapCompleter(realCompleter func([]string) []string) func([]string) []strin
 
 // warmupCache pre-fetches common paths to make first TAB instant
 func warmupCache() {
-	if os.Getenv("SSMSH_DEBUG") != "" {
+	if os.Getenv("PARSH_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[DEBUG] warmupCache() called\n")
 	}
 
 	// Don't warm up if completion is disabled
 	if !isCompletionEnabled() {
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] warmupCache: completion is disabled, skipping\n")
 		}
 		return
@@ -285,13 +285,13 @@ func warmupCache() {
 
 	// Don't warm up if ParameterStore is not initialized (e.g., in tests)
 	if ps == nil {
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] warmupCache: ps is nil, skipping\n")
 		}
 		return
 	}
 
-	if os.Getenv("SSMSH_DEBUG") != "" {
+	if os.Getenv("PARSH_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[DEBUG] warmupCache: starting cache warmup...\n")
 	}
 
@@ -307,7 +307,7 @@ func warmupCache() {
 
 	// Warm up cache in background with rate limiting
 	go func() {
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] Warmup goroutine started\n")
 		}
 		for i, path := range pathsToWarmup {
@@ -327,13 +327,13 @@ func warmupCache() {
 
 			// Skip if already cached
 			if getCached(cacheKey) != nil {
-				if os.Getenv("SSMSH_DEBUG") != "" {
+				if os.Getenv("PARSH_DEBUG") != "" {
 					fmt.Fprintf(os.Stderr, "[DEBUG] Warmup: %s already cached, skipping\n", path)
 				}
 				continue
 			}
 
-			if os.Getenv("SSMSH_DEBUG") != "" {
+			if os.Getenv("PARSH_DEBUG") != "" {
 				fmt.Fprintf(os.Stderr, "[DEBUG] Warmup: fetching %s (region: %s)...\n", path, region)
 			}
 
@@ -341,16 +341,16 @@ func warmupCache() {
 			results := fetchParameterList(path, region)
 			if results != nil && len(results) > 0 {
 				setCached(cacheKey, results)
-				if os.Getenv("SSMSH_DEBUG") != "" {
+				if os.Getenv("PARSH_DEBUG") != "" {
 					fmt.Fprintf(os.Stderr, "[DEBUG] Warmed up cache for %s: %d items\n", path, len(results))
 				}
 			} else {
-				if os.Getenv("SSMSH_DEBUG") != "" {
+				if os.Getenv("PARSH_DEBUG") != "" {
 					fmt.Fprintf(os.Stderr, "[DEBUG] Warmup: %s returned no results\n", path)
 				}
 			}
 		}
-		if os.Getenv("SSMSH_DEBUG") != "" {
+		if os.Getenv("PARSH_DEBUG") != "" {
 			fmt.Fprintf(os.Stderr, "[DEBUG] Warmup goroutine finished\n")
 		}
 	}()
