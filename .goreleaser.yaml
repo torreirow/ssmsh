@@ -1,0 +1,35 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: ssmsh
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -X main.Version={{.Version}}
+    binary: ssmsh-{{.Os}}-{{.Arch}}
+
+archives:
+  - name_template: "ssmsh-{{.Version}}-{{.Os}}-{{.Arch}}"
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+release:
+  github:
+    owner: torreirow
+    name: ssmsh
