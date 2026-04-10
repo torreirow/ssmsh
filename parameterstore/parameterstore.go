@@ -88,7 +88,7 @@ func (ps *ParameterStore) NewParameterStore(checkCredentials bool) error {
 
 	if checkCredentials {
 		// Check for a non-existent parameter to validate credentials & permissions
-		_, err := ps.Get([]string{Delimiter}, ps.Region)
+		_, err := ps.Get([]string{Delimiter}, ps.Region, false)
 		if err != nil {
 			return err
 		}
@@ -171,7 +171,7 @@ func (ps *ParameterStore) List(ppath ParameterPath, recurse bool, lr chan ListRe
 	}
 
 	// Check if this path is a parameter (could be both path & parameter)
-	param, err := ps.Get([]string{path}, region)
+	param, err := ps.Get([]string{path}, region, false)
 	if err != nil {
 		lr <- ListResult{nil, err}
 		return
@@ -301,10 +301,10 @@ func (ps *ParameterStore) GetHistory(param ParameterPath) (r []ssm.ParameterHist
 }
 
 // Get retrieves one or more parameters
-func (ps *ParameterStore) Get(params []string, region string) (r []ssm.Parameter, err error) {
+func (ps *ParameterStore) Get(params []string, region string, decrypt bool) (r []ssm.Parameter, err error) {
 	ssmParams := &ssm.GetParametersInput{
 		Names:          ps.inputPaths(params),
-		WithDecryption: aws.Bool(ps.Decrypt),
+		WithDecryption: aws.Bool(decrypt),
 	}
 	resp, err := ps.Clients[region].GetParameters(ssmParams)
 	if err != nil {

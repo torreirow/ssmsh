@@ -43,7 +43,7 @@ func get(c *ishell.Context) {
 
 		paramsByRegion := groupByRegion(params)
 		for region, params := range paramsByRegion {
-			resp, err := ps.Get(params, region)
+			resp, err := ps.Get(params, region, shouldDecrypt)
 			if err != nil {
 				shell.Println("Error: ", err)
 			} else {

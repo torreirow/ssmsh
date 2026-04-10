@@ -206,7 +206,7 @@ func TestMoveParameter(t *testing.T) {
 			},
 		},
 	}
-	resp, err := p.Get([]string{srcParam.Name}, p.Region)
+	resp, err := p.Get([]string{srcParam.Name}, p.Region, false)
 	if err != nil {
 		msg := fmt.Errorf("Error getting %s: %s", srcParam.Name, err)
 		t.Fatal(msg)
@@ -217,7 +217,7 @@ func TestMoveParameter(t *testing.T) {
 			t.Fatal(msg)
 		}
 	}
-	_, err = p.Get([]string{dstParam.Name}, p.Region)
+	_, err = p.Get([]string{dstParam.Name}, p.Region, false)
 	if err != nil {
 		msg := fmt.Errorf("Expected to find %s but didn't", dstParam.Name)
 		t.Fatal(msg)
@@ -342,7 +342,7 @@ func TestCopyParameter(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error copying parameter", err)
 	}
-	resp, err := p.Get([]string{dstParam.Name}, p.Region)
+	resp, err := p.Get([]string{dstParam.Name}, p.Region, false)
 	if err != nil {
 		t.Fatal("Error getting parameter", err)
 	}
@@ -669,7 +669,7 @@ func TestGetDecryptTrueReturnsPlaintext(t *testing.T) {
 			}},
 		},
 	}
-	resp, err := p.Get([]string{testParam.Name}, p.Region)
+	resp, err := p.Get([]string{testParam.Name}, p.Region, p.Decrypt)
 	if err != nil {
 		t.Fatal("Unexpected error:", err)
 	}
@@ -701,7 +701,7 @@ func TestGetDecryptTrueEncryptedPassthrough(t *testing.T) {
 			}},
 		},
 	}
-	resp, err := p.Get([]string{testParam.Name}, p.Region)
+	resp, err := p.Get([]string{testParam.Name}, p.Region, p.Decrypt)
 	if err != nil {
 		t.Fatal("Unexpected error:", err)
 	}
@@ -733,7 +733,7 @@ func TestGetWithDecryptionFlagPassthrough(t *testing.T) {
 		mock := &mockedSSMCapture{GetParameterResp: []ssm.GetParameterOutput{paramOutput}}
 		p.Clients[p.Region] = mock
 
-		if _, err := p.Get([]string{testParam.Name}, p.Region); err != nil {
+		if _, err := p.Get([]string{testParam.Name}, p.Region, decrypt); err != nil {
 			t.Fatalf("Unexpected error (decrypt=%v): %v", decrypt, err)
 		}
 		if mock.capturedWithDecryption == nil {
