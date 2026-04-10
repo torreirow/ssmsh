@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -104,7 +104,7 @@ func main() {
 }
 
 func processStdin(shell *ishell.Shell) {
-	data, err := ioutil.ReadAll(os.Stdin)
+	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		shell.Println("Error reading from stdin:", err)
 		os.Exit(1)
@@ -113,7 +113,7 @@ func processStdin(shell *ishell.Shell) {
 }
 
 func processFile(shell *ishell.Shell, fn string) {
-	data, err := ioutil.ReadFile(fn)
+	data, err := os.ReadFile(fn)
 	if err != nil {
 		shell.Println("Error reading from file:", err)
 	}

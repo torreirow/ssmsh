@@ -331,7 +331,7 @@ func TestCacheCompression(t *testing.T) {
 
 	cache1, _ := NewPersistentCache(cfg1)
 	cache1.set("data:us-east-1", testData)
-	cache1.save()
+	_ = cache1.save()
 
 	stat1, _ := os.Stat(cfg1.Default.CacheLocation)
 	uncompressedSize := stat1.Size()
@@ -344,7 +344,7 @@ func TestCacheCompression(t *testing.T) {
 
 	cache2, _ := NewPersistentCache(cfg2)
 	cache2.set("data:us-east-1", testData)
-	cache2.save()
+	_ = cache2.save()
 
 	stat2, _ := os.Stat(cfg2.Default.CacheLocation)
 	compressedSize := stat2.Size()
@@ -541,7 +541,7 @@ func BenchmarkPersistentCacheLoad(b *testing.B) {
 	for i := 0; i < 500; i++ {
 		cache.set(fmt.Sprintf("/path/%d:us-east-1", i), []string{"val1", "val2"})
 	}
-	cache.save()
+	_ = cache.save()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

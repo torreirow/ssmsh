@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,7 +13,7 @@ import (
 func TestFullMigrationWorkflow(t *testing.T) {
 	t.Skip("Requires AWS credentials for full integration test - manual test recommended")
 	// Setup: Create temp home directory
-	tmpHome, err := ioutil.TempDir("", "parsh-migration-test-*")
+	tmpHome, err := os.MkdirTemp("", "parsh-migration-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
@@ -26,7 +25,7 @@ func TestFullMigrationWorkflow(t *testing.T) {
 region = us-east-1
 decrypt = true
 `
-	err = ioutil.WriteFile(legacyConfig, []byte(legacyContent), 0600)
+	err = os.WriteFile(legacyConfig, []byte(legacyContent), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create legacy config: %v", err)
 	}
@@ -74,7 +73,7 @@ decrypt = true
 	}
 
 	// 4. New config contains content from legacy config
-	newContent, err := ioutil.ReadFile(newConfigFile)
+	newContent, err := os.ReadFile(newConfigFile)
 	if err != nil {
 		t.Fatalf("Failed to read new config: %v", err)
 	}
@@ -118,7 +117,7 @@ func TestCompletionWithThrottling(t *testing.T) {
 // TestConfigPriorityChain tests config file resolution order
 func TestConfigPriorityChain(t *testing.T) {
 	// Setup: Create temp home directory
-	tmpHome, err := ioutil.TempDir("", "parsh-priority-test-*")
+	tmpHome, err := os.MkdirTemp("", "parsh-priority-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
@@ -136,7 +135,7 @@ func TestConfigPriorityChain(t *testing.T) {
 	xdgContent := `[default]
 region = us-west-2
 `
-	err = ioutil.WriteFile(xdgConfigFile, []byte(xdgContent), 0600)
+	err = os.WriteFile(xdgConfigFile, []byte(xdgContent), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create XDG config: %v", err)
 	}
@@ -146,7 +145,7 @@ region = us-west-2
 	legacyContent := `[default]
 region = us-east-1
 `
-	err = ioutil.WriteFile(legacyConfig, []byte(legacyContent), 0600)
+	err = os.WriteFile(legacyConfig, []byte(legacyContent), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create legacy config: %v", err)
 	}
@@ -156,7 +155,7 @@ region = us-east-1
 	explicitContent := `[default]
 region = eu-west-1
 `
-	err = ioutil.WriteFile(explicitConfig, []byte(explicitContent), 0600)
+	err = os.WriteFile(explicitConfig, []byte(explicitContent), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create explicit config: %v", err)
 	}
@@ -211,7 +210,7 @@ region = eu-west-1
 
 // TestConfigDirPermissions verifies config directory is created with secure permissions
 func TestConfigDirPermissions(t *testing.T) {
-	tmpHome, err := ioutil.TempDir("", "parsh-perms-test-*")
+	tmpHome, err := os.MkdirTemp("", "parsh-perms-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
@@ -237,7 +236,7 @@ func TestConfigDirPermissions(t *testing.T) {
 
 // TestCacheFileHandling tests cache file operations
 func TestCacheFileHandling(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "parsh-cache-test-*")
+	tmpDir, err := os.MkdirTemp("", "parsh-cache-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -258,7 +257,7 @@ func TestCacheFileHandling(t *testing.T) {
 
 // TestHistoryFileCreation verifies history file is created in XDG location
 func TestHistoryFileCreation(t *testing.T) {
-	tmpHome, err := ioutil.TempDir("", "parsh-history-test-*")
+	tmpHome, err := os.MkdirTemp("", "parsh-history-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
@@ -274,7 +273,7 @@ func TestHistoryFileCreation(t *testing.T) {
 	historyFile := filepath.Join(configDir, "history")
 
 	// Create an empty history file to simulate what shell would do
-	err = ioutil.WriteFile(historyFile, []byte(""), 0600)
+	err = os.WriteFile(historyFile, []byte(""), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create history file: %v", err)
 	}
@@ -298,7 +297,7 @@ func TestHistoryFileCreation(t *testing.T) {
 
 // TestGenerateConfigFlag tests the --generate-config flag
 func TestGenerateConfigFlag(t *testing.T) {
-	tmpHome, err := ioutil.TempDir("", "parsh-genconfig-test-*")
+	tmpHome, err := os.MkdirTemp("", "parsh-genconfig-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp home: %v", err)
 	}
@@ -331,7 +330,7 @@ func TestGenerateConfigFlag(t *testing.T) {
 			t.Logf("--generate-config completed with: %v", err)
 		}
 	case <-time.After(5 * time.Second):
-		cmd.Process.Kill()
+		_ = cmd.Process.Kill()
 		t.Fatal("--generate-config hung after 5 seconds")
 	}
 
@@ -339,7 +338,7 @@ func TestGenerateConfigFlag(t *testing.T) {
 	configFile := filepath.Join(tmpHome, ".config", "parsh", "config")
 	if _, err := os.Stat(configFile); err == nil {
 		// Config was created, verify it has some content
-		content, err := ioutil.ReadFile(configFile)
+		content, err := os.ReadFile(configFile)
 		if err != nil {
 			t.Fatalf("Failed to read generated config: %v", err)
 		}
