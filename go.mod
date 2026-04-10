@@ -1,6 +1,6 @@
 module github.com/torreirow/parsh
 
-go 1.17
+go 1.21
 
 require (
 	github.com/abiosoft/ishell v2.0.1-0.20181228190644-8b8aa74a8512+incompatible
