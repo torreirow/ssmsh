@@ -100,7 +100,7 @@ func getPathSuggestions(searchPath string, dirsOnly bool) []string {
 	// This prevents the terminal from hanging on slow AWS API calls.
 	go func() {
 		results := fetchParameterList(searchPath, region)
-		if results != nil && len(results) > 0 {
+		if len(results) > 0 {
 			setCached(cacheKey, results)
 			if os.Getenv("PARSH_DEBUG") != "" {
 				fmt.Fprintf(os.Stderr, "[DEBUG] Background fetch completed for %s: %d items\n", searchPath, len(results))
@@ -339,7 +339,7 @@ func warmupCache() {
 
 			// Fetch from AWS
 			results := fetchParameterList(path, region)
-			if results != nil && len(results) > 0 {
+			if len(results) > 0 {
 				setCached(cacheKey, results)
 				if os.Getenv("PARSH_DEBUG") != "" {
 					fmt.Fprintf(os.Stderr, "[DEBUG] Warmed up cache for %s: %d items\n", path, len(results))
