@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+- **Release automation**: Fixed Nix flake package reference in release.sh (`.#parsh` → `.#default`) enabling automatic vendorHash updates when Go dependencies change
 
 ## [1.0.1] - 09 Apr 2026
 
